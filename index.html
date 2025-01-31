@@ -3,34 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Speed Typing Test</title>
+    <title>⚡ Advanced Speed Typing Test</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
             text-align: center;
-            background: #f4f4f4;
+            background: #121212;
+            color: white;
             margin: 0;
             padding: 0;
+            transition: background 0.5s, color 0.5s;
         }
 
         .container {
-            width: 50%;
-            margin: auto;
-            margin-top: 50px;
+            width: 60%;
+            margin: 40px auto;
             padding: 20px;
-            background: white;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
         }
 
         h1 {
-            color: #333;
+            color: #ff4d6d;
+            font-size: 2rem;
         }
 
         #text-to-type {
-            font-size: 1.2rem;
-            margin-bottom: 20px;
-            color: #ff4d6d;
+            font-size: 1.3rem;
+            margin: 20px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            display: inline-block;
         }
 
         textarea {
@@ -41,6 +46,8 @@
             border: 2px solid #ff4d6d;
             border-radius: 5px;
             resize: none;
+            background: black;
+            color: white;
         }
 
         .btn {
@@ -52,29 +59,76 @@
             border: none;
             cursor: pointer;
             border-radius: 5px;
+            transition: 0.3s;
         }
 
         .btn:hover {
             background: #d6336c;
         }
 
-        #results {
+        #progress {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        #progress-bar {
+            height: 100%;
+            width: 0%;
+            background: #ff4d6d;
+            transition: width 0.3s;
+        }
+
+        .mistake {
+            color: red;
+            text-decoration: underline;
+        }
+
+        .leaderboard {
             margin-top: 20px;
-            font-size: 1.2rem;
-            color: #333;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .dark-mode-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 8px 12px;
+            background: white;
+            color: black;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .dark-mode-btn.dark {
+            background: black;
+            color: white;
         }
     </style>
 </head>
 <body>
 
+    <button class="dark-mode-btn" onclick="toggleDarkMode()">🌙 Dark Mode</button>
+
     <div class="container">
-        <h1>Speed Typing Test</h1>
+        <h1>⚡ Advanced Speed Typing Test</h1>
         <p id="text-to-type"></p>
         <textarea id="user-input" placeholder="Start typing here..."></textarea>
+        <div id="progress"><div id="progress-bar"></div></div>
         <br>
         <button class="btn" onclick="startTest()">Start Test</button>
         <button class="btn" onclick="resetTest()">Reset</button>
         <p id="results"></p>
+    </div>
+
+    <div class="leaderboard">
+        <h2>🏆 Leaderboard</h2>
+        <ul id="leaderboard-list"></ul>
     </div>
 
     <script>
@@ -86,7 +140,8 @@
             "Just imagine how wonderful you are!!"
         ];
 
-        let startTime, endTime, selectedText;
+        let startTime, selectedText, interval;
+        const leaderboard = JSON.parse(localStorage.getItem("leaderboard")) || [];
 
         function getRandomText() {
             return texts[Math.floor(Math.random() * texts.length)];
@@ -94,44 +149,72 @@
 
         function startTest() {
             selectedText = getRandomText();
-            document.getElementById("text-to-type").innerText = selectedText;
+            document.getElementById("text-to-type").innerHTML = selectedText;
             document.getElementById("user-input").value = "";
             document.getElementById("results").innerText = "";
             startTime = new Date().getTime();
+            interval = setInterval(updateProgress, 100);
+        }
+
+        function updateProgress() {
+            const userText = document.getElementById("user-input").value;
+            const percentage = (userText.length / selectedText.length) * 100;
+            document.getElementById("progress-bar").style.width = percentage + "%";
+            highlightMistakes(userText);
+        }
+
+        function highlightMistakes(userText) {
+            let formattedText = "";
+            for (let i = 0; i < selectedText.length; i++) {
+                if (userText[i] !== selectedText[i]) {
+                    formattedText += `<span class="mistake">${selectedText[i]}</span>`;
+                } else {
+                    formattedText += selectedText[i];
+                }
+            }
+            document.getElementById("text-to-type").innerHTML = formattedText;
         }
 
         function endTest() {
-            endTime = new Date().getTime();
-            let timeTaken = (endTime - startTime) / 1000; // Convert to seconds
-            let userText = document.getElementById("user-input").value.trim();
-            
-            let wordsPerMinute = (selectedText.split(" ").length / (timeTaken / 60)).toFixed(2);
-            let resultMessage = `⏱ Time taken: ${timeTaken.toFixed(2)} seconds\n`;
-            resultMessage += `⚡ Words per minute: ${wordsPerMinute} WPM\n`;
+            clearInterval(interval);
+            const userText = document.getElementById("user-input").value.trim();
+            const timeTaken = (new Date().getTime() - startTime) / 1000;
+            const wordsPerMinute = (selectedText.split(" ").length / (timeTaken / 60)).toFixed(2);
+            const accuracy = ((selectedText.split("").filter((char, i) => char === userText[i]).length / selectedText.length) * 100).toFixed(2);
 
-            if (userText === selectedText) {
-                resultMessage += "✅ Congratulations! You typed it correctly!";
-            } else {
-                resultMessage += "❌ Oops! There were some errors in your typing.";
-            }
-
+            let resultMessage = `⏱ Time: ${timeTaken.toFixed(2)} sec\n⚡ WPM: ${wordsPerMinute}\n🎯 Accuracy: ${accuracy}%`;
             document.getElementById("results").innerText = resultMessage;
+
+            leaderboard.push({ wpm: wordsPerMinute, accuracy, timeTaken });
+            leaderboard.sort((a, b) => b.wpm - a.wpm);
+            localStorage.setItem("leaderboard", JSON.stringify(leaderboard.slice(0, 5)));
+            updateLeaderboard();
         }
 
         function resetTest() {
             document.getElementById("user-input").value = "";
             document.getElementById("text-to-type").innerText = "";
             document.getElementById("results").innerText = "";
-            startTime = null;
-            endTime = null;
+            document.getElementById("progress-bar").style.width = "0%";
+            clearInterval(interval);
         }
 
-        // Listen for input in the text area to detect when typing ends
+        function updateLeaderboard() {
+            const list = document.getElementById("leaderboard-list");
+            list.innerHTML = leaderboard.map(entry => `<li>⚡ WPM: ${entry.wpm}, 🎯 Accuracy: ${entry.accuracy}%</li>`).join("");
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle("dark-mode");
+        }
+
         document.getElementById("user-input").addEventListener("input", () => {
-            if (startTime && document.getElementById("user-input").value.trim().length === selectedText.length) {
+            if (document.getElementById("user-input").value.length === selectedText.length) {
                 endTest();
             }
         });
+
+        updateLeaderboard();
     </script>
 
 </body>
